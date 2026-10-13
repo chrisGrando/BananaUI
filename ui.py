@@ -30,8 +30,8 @@ from api_client import (
     generate_nanobanana_image,
     save_generated_image,
     get_most_recent_output_image,
-    NanoBananaAPIError
 )
+from exceptions import NanoBananaAPIError
 
 
 class BananaUIApp:
@@ -663,6 +663,7 @@ class BananaUIApp:
             self.attachment_paths[index] = file_path
         except Exception as e:
             messagebox.showerror("Error Loading Image", f"Could not load image:\n{e}")
+            raise NanoBananaAPIError(f"Could not load image:\n{e}")
 
     def _clear_attachment(self, index: int):
         """Clears the specified attachment slot."""
@@ -813,7 +814,7 @@ class BananaUIApp:
                 try:
                     callback()
                 except Exception as e:
-                    print(f"Error executing callback: {e}", file=sys.stderr)
+                    raise NanoBananaAPIError(f"Error executing callback:\n{e}")
         except queue.Empty:
             pass
         finally:
@@ -878,6 +879,7 @@ class BananaUIApp:
             self._display_preview_image(img)
         except Exception as e:
             messagebox.showwarning("Preview Warning", f"Image saved successfully to {saved_path}, but failed to preview: {e}")
+            raise NanoBananaAPIError(f"Image saved successfully to {saved_path}, but failed to preview: {e}")
 
     def _on_generation_error(self, error_message: str):
         """Runs on main thread when image generation fails."""
@@ -976,14 +978,28 @@ class BananaUIApp:
         """Opens the last saved image with the system default viewer."""
         if self.last_saved_path and self.last_saved_path.exists():
             try:
-                os.startfile(str(self.last_saved_path))
+                path_str = str(self.last_saved_path)
+                if sys.platform == "win32":
+                    os.startfile(path_str)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", path_str], check=True)
+                else:
+                    subprocess.run(["xdg-open", path_str], check=True)
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file: {e}")
+                raise NanoBananaAPIError(f"Could not open file: {e}")
 
     def _open_output_folder(self):
-        """Opens the output folder in Windows Explorer."""
+        """Opens the output folder in the system file manager."""
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         try:
-            os.startfile(str(OUTPUT_DIR))
+            path_str = str(OUTPUT_DIR)
+            if sys.platform == "win32":
+                os.startfile(path_str)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", path_str], check=True)
+            else:
+                subprocess.run(["xdg-open", path_str], check=True)
         except Exception as e:
-            subprocess.run(["explorer", str(OUTPUT_DIR)])
+            messagebox.showerror("Error", f"Could not open folder: {e}")
+            raise NanoBananaAPIError(f"Could not open folder: {e}")

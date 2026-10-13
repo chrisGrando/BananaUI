@@ -1,6 +1,7 @@
 """Configuration constants and model definitions for BananaUI."""
 import os
 from pathlib import Path
+from exceptions import NanoBananaAPIError
 
 # Application Version
 APP_VERSION = "v1.0"
@@ -61,7 +62,7 @@ def get_model_id_from_display(display_name: str) -> str:
     """Resolve display name or raw model ID to the API model identifier."""
     cleaned = display_name.strip()
     if not is_proper_model(cleaned):
-        raise ValueError("Please select a valid NanoBanana model.")
+        raise NanoBananaAPIError("Please select a valid NanoBanana model.")
     for m in AVAILABLE_MODELS:
         if m["display_name"] == cleaned:
             return m["model_id"]

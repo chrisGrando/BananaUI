@@ -1,37 +1,20 @@
 """Gemini API client for NanoBanana image generation."""
-from inspect import getsourcefile
 import os
 import json
 import base64
 import mimetypes
 import urllib.request
 import urllib.error
-import traceback
 from pathlib import Path
 from typing import List, Optional, Tuple
 from config import GEMINI_API_BASE_URL, OUTPUT_DIR
-
-class NanoBananaAPIError(Exception):
-    """Custom exception for NanoBanana API errors."""
-    def __init__(self, message):
-        # Save exception report to log file
-        self.message = message
-        appRunningDir = (os.path.dirname(getsourcefile(lambda:0))).replace("\\", "/")
-        errorFileName = appRunningDir + "/error.log"
-        with open(errorFileName, "a") as error_file:
-            txt = self.message + "\n" + "----------------------------------------------------------------------------------" + "\n"
-            print(txt)
-            error_file.write(txt)
-            error_file.write(str(traceback.format_exc()) + "\n" + "----------------------------------------------------------------------------------" + "\n")
-        
-        # Call the base class constructor with the parameters it needs
-        super(Exception, self).__init__(message) 
+from exceptions import NanoBananaAPIError
 
 def encode_image_file(file_path: str | Path) -> dict:
     """Reads an image file and returns an inlineData part for Gemini API."""
     path = Path(file_path)
     if not path.exists():
-        raise FileNotFoundError(f"Attachment file not found: {path}")
+        raise NanoBananaAPIError(f"Attachment file not found: {path}")
 
     # Determine MIME type
     mime_type, _ = mimetypes.guess_type(str(path))

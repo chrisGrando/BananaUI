@@ -4,6 +4,8 @@
 - Always use PyPy to run and build the project
 - In case PyPy is completely unavailable, using regular Python is allowed
 - NEVER use any `git` commands unless explicitly asked in the prompt
+- If installing a new package with pip is required, always use `pip install --user [package-name]`
+- NEVER install a new package with pip in Python's root
 
 ## Environment
 - All secrets are in environment variables. NEVER hardcode credentials.
