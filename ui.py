@@ -109,7 +109,7 @@ class BananaUIApp:
                 if not LOGO_PATH.exists():
                     create_nanobanana_logo(128)
                 icon_img = Image.open(LOGO_PATH)
-            else
+            else:
                 icon_img = Image.open(ICON_PATH)
             icon_photo = ImageTk.PhotoImage(icon_img)
             self.root.iconphoto(True, icon_photo)
