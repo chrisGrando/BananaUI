@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
 ASSETS_DIR = BASE_DIR / "assets"
 LOGO_PATH = ASSETS_DIR / "nanobanana_logo.png"
+ICON_PATH = ASSETS_DIR / "nanobanana_icon.png"
 
 # Ensure essential directories exist
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

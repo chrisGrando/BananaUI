@@ -23,6 +23,7 @@ from config import (
     OUTPUT_DIR,
     MAX_ATTACHMENTS,
     LOGO_PATH,
+    ICON_PATH,
     BASE_DIR
 )
 from logo import get_nanobanana_logo, create_nanobanana_logo
@@ -100,12 +101,16 @@ class BananaUIApp:
         self.update_generate_button_state()
 
     def _set_app_icon(self):
-        """Sets window icon to NanoBanana logo if available."""
+        """Sets window icon to NanoBanana icon or logo if available."""
         try:
             # Generates a new logo if file doesn't exists
-            if not LOGO_PATH.exists():
-                create_nanobanana_logo(128)
-            icon_img = Image.open(LOGO_PATH)
+            icon_img = None
+            if not ICON_PATH.exists():
+                if not LOGO_PATH.exists():
+                    create_nanobanana_logo(128)
+                icon_img = Image.open(LOGO_PATH)
+            else
+                icon_img = Image.open(ICON_PATH)
             icon_photo = ImageTk.PhotoImage(icon_img)
             self.root.iconphoto(True, icon_photo)
             # Keep reference to avoid garbage collection
