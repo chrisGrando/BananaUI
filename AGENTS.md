@@ -9,6 +9,7 @@
 - ALWAYS check if PyPy is located at `<Project Root>/bin/pypy`
   - If it isn't, then run `SETUP_PROJECT_WINDOWS.bat` before doing anything else
     - Watch out for any error or warning messages when running `SETUP_PROJECT_WINDOWS.bat`
+  - If it is, then prefer using the locally installed PyPy over any global installations
 - Prefer using resources bundled within the project repository (such as the files in the `assets` folder)
 - ALWAYS install a new package with pip in PyPy's root
 - Run the project by using the `RUN_PROJECT_WINDOWS.bat` script

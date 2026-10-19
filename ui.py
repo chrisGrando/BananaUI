@@ -151,6 +151,48 @@ class BananaUIApp:
             darkcolor=self.COLOR_ACCENT
         )
 
+        # Custom Scrollbar styling matching the modern dark UI theme
+        self.style.configure(
+            "Banana.Vertical.TScrollbar",
+            troughcolor=self.COLOR_CARD,
+            background=self.COLOR_BORDER,
+            bordercolor=self.COLOR_PANEL,
+            darkcolor=self.COLOR_BORDER,
+            lightcolor=self.COLOR_BORDER,
+            arrowcolor=self.COLOR_TEXT_MUTED,
+            arrowsize=11,
+            gripcount=0,
+            width=12
+        )
+        self.style.map(
+            "Banana.Vertical.TScrollbar",
+            background=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            darkcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            lightcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            arrowcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)]
+        )
+
+        # Apply to standard Vertical.TScrollbar as well
+        self.style.configure(
+            "Vertical.TScrollbar",
+            troughcolor=self.COLOR_CARD,
+            background=self.COLOR_BORDER,
+            bordercolor=self.COLOR_PANEL,
+            darkcolor=self.COLOR_BORDER,
+            lightcolor=self.COLOR_BORDER,
+            arrowcolor=self.COLOR_TEXT_MUTED,
+            arrowsize=11,
+            gripcount=0,
+            width=12
+        )
+        self.style.map(
+            "Vertical.TScrollbar",
+            background=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            darkcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            lightcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)],
+            arrowcolor=[("pressed", self.COLOR_ACCENT_HOVER), ("active", self.COLOR_ACCENT)]
+        )
+
     def _build_layout(self):
         """Creates the two-column main interface."""
         # Main split container
@@ -209,11 +251,22 @@ class BananaUIApp:
 
         # Separator line
         sep = tk.Frame(self.left_frame, bg=self.COLOR_BORDER, height=1)
-        sep.pack(fill=tk.X, padx=18, pady=(0, 12))
+        sep.pack(fill=tk.X, padx=18, pady=(0, 5))
 
-        # Scrollable container for controls
-        canvas = tk.Canvas(self.left_frame, bg=self.COLOR_PANEL, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.left_frame, orient="vertical", command=canvas.yview)
+        # Bottom panel for action controls (Generate button & status text)
+        # Positioned at bottom left of screen, always visible regardless of scrollbar position
+        self.bottom_panel = tk.Frame(self.left_frame, bg=self.COLOR_PANEL)
+        self.bottom_panel.pack(side=tk.BOTTOM, fill=tk.X, padx=18, pady=(0, 14))
+
+        bottom_sep = tk.Frame(self.left_frame, bg=self.COLOR_BORDER, height=1)
+        bottom_sep.pack(side=tk.BOTTOM, fill=tk.X, padx=18, pady=(0, 12))
+
+        # Scrollable container for middle controls
+        scroll_frame = tk.Frame(self.left_frame, bg=self.COLOR_PANEL)
+        scroll_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(scroll_frame, bg=self.COLOR_PANEL, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(scroll_frame, orient="vertical", style="Banana.Vertical.TScrollbar", command=canvas.yview)
         self.scroll_content = tk.Frame(canvas, bg=self.COLOR_PANEL)
 
         self.scroll_content.bind(
@@ -229,8 +282,8 @@ class BananaUIApp:
         )
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(18, 0), pady=(0, 14))
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(10, 10), pady=(4, 18))
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(18, 0), pady=(0, 6))
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(8, 7), pady=(0, 6))
 
         # Enable mousewheel scrolling
         def _on_mousewheel(event):
@@ -428,13 +481,10 @@ class BananaUIApp:
             self.attachment_widgets.append(slot_widget)
 
         # -------------------------------------------------------------
-        # 5. GENERATE BUTTON & STATUS (Enabled only when all required filled)
+        # 5. GENERATE BUTTON & STATUS (In fixed bottom-left panel)
         # -------------------------------------------------------------
-        action_frame = tk.Frame(content, bg=self.COLOR_PANEL)
-        action_frame.pack(fill=tk.X, pady=(6, 8))
-
         self.generate_btn = tk.Button(
-            action_frame,
+            self.bottom_panel,
             text="⚡ GENERATE",
             font=("Segoe UI", 12, "bold"),
             bg=self.COLOR_ACCENT,
@@ -451,7 +501,7 @@ class BananaUIApp:
 
         # Status and progress bar
         self.progress_bar = ttk.Progressbar(
-            action_frame,
+            self.bottom_panel,
             orient="horizontal",
             mode="indeterminate",
             style="Banana.Horizontal.TProgressbar"
@@ -459,7 +509,7 @@ class BananaUIApp:
         # Not packed initially, packed when generating
 
         self.status_label = tk.Label(
-            action_frame,
+            self.bottom_panel,
             text="Fill in API Key, Model, and Prompt to generate",
             font=("Segoe UI", 9),
             fg=self.COLOR_TEXT_MUTED,
@@ -796,7 +846,7 @@ class BananaUIApp:
         self.update_generate_button_state()
 
         # UI updates: Show progress bar and update status
-        self.progress_bar.pack(fill=tk.X, pady=(6, 2))
+        self.progress_bar.pack(fill=tk.X, pady=(6, 2), before=self.status_label)
         self.progress_bar.start(10)
         self.status_label.configure(
             text=f"Generating with {model_id}... Please wait.",
