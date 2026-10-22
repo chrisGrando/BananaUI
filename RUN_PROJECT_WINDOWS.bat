@@ -28,6 +28,6 @@ if not exist "%MY_PYPY_DIR%\pypy.exe" (
 set "PATH=%MY_PYPY_DIR%;%MY_PYPY_PIP_DIR%;%PATH%"
 
 :: Running the project
-"%MY_PYPY_DIR%\pypy.exe" Main.py
+"%MY_PYPY_DIR%\pypy.exe" "%MY_SCRIPT_DIR%app\Main.py"
 
 if %ERRORLEVEL% NEQ 0 pause

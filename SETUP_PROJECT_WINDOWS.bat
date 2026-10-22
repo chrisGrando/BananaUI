@@ -16,8 +16,8 @@ set "MY_SCRIPT_DIR=%~dp0"
 set "MY_BIN_DIR=%MY_SCRIPT_DIR%bin"
 set "MY_PYPY_DIR=%MY_BIN_DIR%\pypy"
 set "MY_PYPY_PIP_DIR=%MY_PYPY_DIR%\Scripts"
-set "SevenZ=%MY_SCRIPT_DIR%assets\7zr.exe"
-set "Pillow=%MY_SCRIPT_DIR%assets\pillow-12.3.0-pp311-pypy311_pp80-win_amd64.whl"
+set "SevenZ=%MY_SCRIPT_DIR%utils\7zr.exe"
+set "Pillow=%MY_SCRIPT_DIR%utils\pillow-12.3.0-pp311-pypy311_pp80-win_amd64.whl"
 
 :: Creates necessary folders (if they do not exist)
 if not exist "%MY_BIN_DIR%" mkdir "%MY_BIN_DIR%"
@@ -31,7 +31,7 @@ if not exist "%SevenZ%" (
 	exit /b 1
 )
 
-if not exist "%MY_SCRIPT_DIR%assets\pypy-3.11.7z" (
+if not exist "%MY_SCRIPT_DIR%utils\pypy-3.11.7z" (
 	echo ERROR: PyPy package not found!
 	echo Aborting...
 	pause
@@ -42,7 +42,7 @@ cd "%MY_PYPY_DIR%"
 echo Extracting PyPy...
 echo -----------------------------------------------------
 
-"%SevenZ%" x -aoa -y "%MY_SCRIPT_DIR%assets\pypy-3.11.7z"
+"%SevenZ%" x -aoa -y "%MY_SCRIPT_DIR%utils\pypy-3.11.7z"
 
 echo.
 echo -----------------------------------------------------

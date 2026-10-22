@@ -222,6 +222,5 @@ __marimo__/
 
 # Project related
 bin/**
-output/**
-PyPy_local/**
+app/output/**
 !assets/pillow-12.3.0-pp311-pypy311_pp80-win_amd64.whl
