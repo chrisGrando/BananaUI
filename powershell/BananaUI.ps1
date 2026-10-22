@@ -1,3 +1,6 @@
+# Get PSScriptRoot independently of compiled/not compiled
+if (!$PSScriptRoot) { $PSScriptRoot = $ScriptRoot }
+
 # Prevents running the script with admin rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 

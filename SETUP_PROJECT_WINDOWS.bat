@@ -92,4 +92,5 @@ if not exist "%Pillow%" (
 
 if %ERRORLEVEL% NEQ 0 echo WARNING: There might be something wrong with the pillow installation!
 
-pause
+:: Only pause if no arguments were passed at all
+if "%~1"=="" pause
