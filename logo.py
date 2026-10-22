@@ -144,13 +144,59 @@ def create_nanobanana_logo(size: int = 512, save_path: Path = LOGO_PATH) -> Imag
     # Fallback to default bitmap or generic truetype font if available
     font_large = None
     font_small = None
-    for font_candidate in ["arialbd.ttf", "segoeuib.ttf", "calibrib.ttf", "Arial Bold.ttf"]:
+    # Cross-platform font candidates:
+    #  - Windows: arialbd.ttf, segoeuib.ttf, calibrib.ttf
+    #  - macOS:   "Helvetica Bold.ttf", system Helvetica TTC
+    #  - Linux:   DejaVuSans-Bold.ttf, LiberationSans-Bold.ttf, FreeSansBold.ttf
+    font_candidates_bold = [
+        "arialbd.ttf",
+        "segoeuib.ttf",
+        "calibrib.ttf",
+        "Arial Bold.ttf",
+        # macOS
+        "Helvetica Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/Library/Fonts/Arial Bold.ttf",
+        # Linux
+        "DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "FreeSansBold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]
+    # Corresponding regular (non-bold) variants for subtitle text
+    font_candidates_regular = [
+        "arial.ttf",
+        "segoeui.ttf",
+        "calibri.ttf",
+        "Arial.ttf",
+        # macOS
+        "Helvetica.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/Library/Fonts/Arial.ttf",
+        # Linux
+        "DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "FreeSans.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+    for font_candidate in font_candidates_bold:
         try:
             font_large = ImageFont.truetype(font_candidate, int(32 * 2))
-            font_small = ImageFont.truetype(font_candidate.replace("b", ""), int(14 * 2))
             break
         except Exception:
             continue
+
+    if font_large:
+        for font_candidate in font_candidates_regular:
+            try:
+                font_small = ImageFont.truetype(font_candidate, int(14 * 2))
+                break
+            except Exception:
+                continue
 
     text_main = "NanoBanana"
     text_sub = "IMAGE GENERATION ENGINE"

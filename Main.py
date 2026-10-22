@@ -3,10 +3,13 @@ from inspect import getsourcefile
 import os
 import sys
 import tkinter as tk
-from ui import BananaUIApp
+from ui import BananaUIApp, ensure_interactive_desktop
 
 def main():
     """Initializes and runs the BananaUI front-end application."""
+    # Ensure current thread is attached to the interactive 'default' desktop on 'WinSta0'
+    ensure_interactive_desktop()
+
     # Delete error log file if exists
     appRunningDir = (os.path.dirname(getsourcefile(lambda:0))).replace("\\", "/")
     errorFile = appRunningDir + "/error.log"

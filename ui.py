@@ -35,6 +35,112 @@ from api_client import (
 from exceptions import NanoBananaAPIError
 
 
+def _get_platform_font_family() -> str:
+    """Returns the preferred sans-serif UI font family for the current platform.
+
+    - Windows: 'Segoe UI'
+    - macOS:   'Helvetica Neue'
+    - Linux:   'DejaVu Sans'
+
+    Falls back to the Tk built-in 'TkDefaultFont' if none of the above are
+    available on the system.
+    """
+    if sys.platform == "win32":
+        return "Segoe UI"
+    elif sys.platform == "darwin":
+        return "Helvetica Neue"
+    else:
+        return "DejaVu Sans"
+
+
+# Resolved once at import time so every widget uses the same family.
+PLATFORM_FONT = _get_platform_font_family()
+
+
+def ensure_interactive_desktop():
+    """
+    Ensures the calling thread is attached to the visible interactive user desktop ('default'
+    on window station 'WinSta0') on Windows. This bypasses window suppression when launched
+    from background tools, services, or runners that create processes on hidden desktops.
+    MUST be called before any Tkinter / GUI root window is initialized.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+
+        # 1. Ensure connected to interactive Window Station 'WinSta0'
+        h_winsta = user32.GetProcessWindowStation()
+        if h_winsta:
+            buf = ctypes.create_unicode_buffer(256)
+            user32.GetUserObjectInformationW(h_winsta, 2, buf, 256, None)
+            if buf.value.lower() != "winsta0":
+                WINSTA_ALL = 0x037F
+                hwinsta = user32.OpenWindowStationW("WinSta0", False, WINSTA_ALL)
+                if hwinsta:
+                    user32.SetProcessWindowStation(hwinsta)
+
+        # 2. Ensure Thread Desktop is set to 'default' (interactive desktop)
+        tid = kernel32.GetCurrentThreadId()
+        h_desk = user32.GetThreadDesktop(tid)
+        if h_desk:
+            buf = ctypes.create_unicode_buffer(256)
+            user32.GetUserObjectInformationW(h_desk, 2, buf, 256, None)
+            if buf.value.lower() != "default":
+                DESKTOP_ALL = 0x01FF
+                hdesk = user32.OpenDesktopW("default", 0, False, DESKTOP_ALL)
+                if hdesk:
+                    user32.SetThreadDesktop(hdesk)
+    except Exception:
+        pass
+
+
+def force_window_visible(root: tk.Tk):
+    """
+    Bypasses window suppression flags (such as SW_HIDE or CREATE_NO_WINDOW inherited
+    from parent background runners). Forces the Tkinter window to unhide, display,
+    and bring itself to the foreground.
+    """
+    try:
+        root.update_idletasks()
+        root.deiconify()
+
+        if sys.platform == "win32":
+            import ctypes
+            user32 = ctypes.windll.user32
+
+            client_hwnd = root.winfo_id()
+            top_hwnd = user32.GetParent(client_hwnd) or client_hwnd
+
+            # SW_SHOW = 5, SW_MAXIMIZE = 3
+            SW_SHOW = 5
+            SW_MAXIMIZE = 3
+            try:
+                state = root.state()
+                if state == "zoomed":
+                    user32.ShowWindow(top_hwnd, SW_MAXIMIZE)
+                else:
+                    user32.ShowWindow(top_hwnd, SW_SHOW)
+            except Exception:
+                user32.ShowWindow(top_hwnd, SW_SHOW)
+
+            user32.BringWindowToTop(top_hwnd)
+            user32.SetForegroundWindow(top_hwnd)
+
+        root.lift()
+        root.focus_force()
+        root.attributes("-topmost", True)
+        root.after_idle(lambda: root.attributes("-topmost", False))
+    except Exception:
+        pass
+
+
+# Ensure interactive desktop is attached at module load time as early as possible
+ensure_interactive_desktop()
+
+
 class BananaUIApp:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -44,13 +150,22 @@ class BananaUIApp:
         self.root.minsize(980, 680)
 
         # Start application in maximized window mode
+        # - Windows: state("zoomed") is natively supported.
+        # - Linux (X11/Wayland): the "-zoomed" attribute works on most WMs.
+        # - macOS (Aqua): neither works reliably; fill the screen via geometry.
         try:
             self.root.state("zoomed")
         except Exception:
             try:
                 self.root.attributes("-zoomed", True)
             except Exception:
-                pass
+                try:
+                    # macOS / generic fallback: resize to fill the screen
+                    sw = self.root.winfo_screenwidth()
+                    sh = self.root.winfo_screenheight()
+                    self.root.geometry(f"{sw}x{sh}+0+0")
+                except Exception:
+                    pass
 
         # State variables
         self.task_queue = queue.Queue()
@@ -99,6 +214,10 @@ class BananaUIApp:
 
         # Initial check to set GENERATE button state (DISABLED initially until required fields are filled)
         self.update_generate_button_state()
+
+        # Force window to be unhidden, brought to foreground, and displayed on user desktop
+        force_window_visible(self.root)
+        self.root.after(150, lambda: force_window_visible(self.root))
 
     def _set_app_icon(self):
         """Sets window icon to NanoBanana icon or logo if available."""
@@ -221,7 +340,7 @@ class BananaUIApp:
         title_label = tk.Label(
             title_frame,
             text="🍌 NanoBanana Studio",
-            font=("Segoe UI", 16, "bold"),
+            font=(PLATFORM_FONT, 16, "bold"),
             fg=self.COLOR_ACCENT,
             bg=self.COLOR_PANEL
         )
@@ -230,7 +349,7 @@ class BananaUIApp:
         version_label = tk.Label(
             title_frame,
             text=self.app_version,
-            font=("Segoe UI", 9, "bold"),
+            font=(PLATFORM_FONT, 9, "bold"),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_CARD,
             padx=6,
@@ -241,7 +360,7 @@ class BananaUIApp:
         badge_label = tk.Label(
             title_frame,
             text="Powered by Gemini",
-            font=("Segoe UI", 9, "bold"),
+            font=(PLATFORM_FONT, 9, "bold"),
             fg=self.COLOR_CYAN,
             bg=self.COLOR_CARD,
             padx=8,
@@ -285,10 +404,27 @@ class BananaUIApp:
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(18, 0), pady=(0, 6))
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(8, 7), pady=(0, 6))
 
-        # Enable mousewheel scrolling
+        # Enable mousewheel scrolling (cross-platform)
+        # Windows / macOS: <MouseWheel> with event.delta
+        # Linux X11:       <Button-4> (scroll up) and <Button-5> (scroll down)
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            if sys.platform == "darwin":
+                # macOS delta is already in single-line units (no /120 needed)
+                canvas.yview_scroll(int(-1 * event.delta), "units")
+            else:
+                # Windows: delta is typically ±120 per notch
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def _on_mousewheel_up_linux(event):
+            canvas.yview_scroll(-1, "units")
+
+        def _on_mousewheel_down_linux(event):
+            canvas.yview_scroll(1, "units")
+
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        if sys.platform == "linux":
+            canvas.bind_all("<Button-4>", _on_mousewheel_up_linux)
+            canvas.bind_all("<Button-5>", _on_mousewheel_down_linux)
 
         content = self.scroll_content
 
@@ -301,7 +437,7 @@ class BananaUIApp:
         api_label = tk.Label(
             api_header_frame,
             text="Gemini API Key *",
-            font=("Segoe UI", 10, "bold"),
+            font=(PLATFORM_FONT, 10, "bold"),
             fg=self.COLOR_TEXT,
             bg=self.COLOR_PANEL
         )
@@ -310,7 +446,7 @@ class BananaUIApp:
         api_req_hint = tk.Label(
             api_header_frame,
             text="(Required)",
-            font=("Segoe UI", 8),
+            font=(PLATFORM_FONT, 8),
             fg=self.COLOR_ACCENT,
             bg=self.COLOR_PANEL
         )
@@ -326,7 +462,7 @@ class BananaUIApp:
             api_input_frame,
             textvariable=self.api_key_var,
             show="•",
-            font=("Segoe UI", 10),
+            font=(PLATFORM_FONT, 10),
             bg=self.COLOR_INPUT_BG,
             fg=self.COLOR_TEXT,
             insertbackground=self.COLOR_ACCENT,
@@ -340,7 +476,7 @@ class BananaUIApp:
         self.toggle_eye_btn = tk.Button(
             api_input_frame,
             text="👁",
-            font=("Segoe UI", 9),
+            font=(PLATFORM_FONT, 9),
             bg=self.COLOR_INPUT_BG,
             fg=self.COLOR_TEXT_MUTED,
             activebackground=self.COLOR_CARD,
@@ -365,7 +501,7 @@ class BananaUIApp:
         model_label = tk.Label(
             model_header_frame,
             text="NanoBanana Model *",
-            font=("Segoe UI", 10, "bold"),
+            font=(PLATFORM_FONT, 10, "bold"),
             fg=self.COLOR_TEXT,
             bg=self.COLOR_PANEL
         )
@@ -374,7 +510,7 @@ class BananaUIApp:
         model_hint = tk.Label(
             model_header_frame,
             text="(Select a model to enable generation)",
-            font=("Segoe UI", 8),
+            font=(PLATFORM_FONT, 8),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_PANEL
         )
@@ -389,7 +525,7 @@ class BananaUIApp:
             values=model_names,
             state="readonly",
             style="TCombobox",
-            font=("Segoe UI", 9)
+            font=(PLATFORM_FONT, 9)
         )
         self.model_combobox.pack(fill=tk.X, pady=(0, 12))
         self.model_combobox.bind("<<ComboboxSelected>>", lambda e: self.update_generate_button_state())
@@ -404,7 +540,7 @@ class BananaUIApp:
         prompt_label = tk.Label(
             prompt_header_frame,
             text="Image Prompt *",
-            font=("Segoe UI", 10, "bold"),
+            font=(PLATFORM_FONT, 10, "bold"),
             fg=self.COLOR_TEXT,
             bg=self.COLOR_PANEL
         )
@@ -413,7 +549,7 @@ class BananaUIApp:
         prompt_req_hint = tk.Label(
             prompt_header_frame,
             text="(Required - describe your image)",
-            font=("Segoe UI", 8),
+            font=(PLATFORM_FONT, 8),
             fg=self.COLOR_ACCENT,
             bg=self.COLOR_PANEL
         )
@@ -426,7 +562,7 @@ class BananaUIApp:
         self.prompt_text = tk.Text(
             prompt_container,
             height=6,
-            font=("Segoe UI", 10),
+            font=(PLATFORM_FONT, 10),
             bg=self.COLOR_INPUT_BG,
             fg=self.COLOR_TEXT,
             insertbackground=self.COLOR_ACCENT,
@@ -451,7 +587,7 @@ class BananaUIApp:
         attach_label = tk.Label(
             attach_header_frame,
             text="Image Attachments",
-            font=("Segoe UI", 10, "bold"),
+            font=(PLATFORM_FONT, 10, "bold"),
             fg=self.COLOR_TEXT,
             bg=self.COLOR_PANEL
         )
@@ -460,7 +596,7 @@ class BananaUIApp:
         attach_opt_hint = tk.Label(
             attach_header_frame,
             text="(Optional - up to 8 images for editing/reference)",
-            font=("Segoe UI", 8),
+            font=(PLATFORM_FONT, 8),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_PANEL
         )
@@ -486,7 +622,7 @@ class BananaUIApp:
         self.generate_btn = tk.Button(
             self.bottom_panel,
             text="⚡ GENERATE",
-            font=("Segoe UI", 12, "bold"),
+            font=(PLATFORM_FONT, 12, "bold"),
             bg=self.COLOR_ACCENT,
             fg="#0F1115",
             activebackground=self.COLOR_ACCENT_HOVER,
@@ -511,7 +647,7 @@ class BananaUIApp:
         self.status_label = tk.Label(
             self.bottom_panel,
             text="Fill in API Key, Model, and Prompt to generate",
-            font=("Segoe UI", 9),
+            font=(PLATFORM_FONT, 9),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_PANEL,
             wraplength=480,
@@ -536,7 +672,7 @@ class BananaUIApp:
         slot_label = tk.Label(
             top_bar,
             text=f"Attachment #{index + 1}",
-            font=("Segoe UI", 8, "bold"),
+            font=(PLATFORM_FONT, 8, "bold"),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_CARD
         )
@@ -545,7 +681,7 @@ class BananaUIApp:
         clear_btn = tk.Button(
             top_bar,
             text="✕",
-            font=("Segoe UI", 8, "bold"),
+            font=(PLATFORM_FONT, 8, "bold"),
             bg=self.COLOR_CARD,
             fg=self.COLOR_TEXT_MUTED,
             activebackground=self.COLOR_INPUT_BG,
@@ -561,7 +697,7 @@ class BananaUIApp:
         thumb_label = tk.Label(
             card,
             text="Empty",
-            font=("Segoe UI", 8),
+            font=(PLATFORM_FONT, 8),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_INPUT_BG,
             width=18,
@@ -573,7 +709,7 @@ class BananaUIApp:
         upload_btn = tk.Button(
             card,
             text="📁 Select Image",
-            font=("Segoe UI", 10),
+            font=(PLATFORM_FONT, 10),
             bg=self.COLOR_INPUT_BG,
             fg=self.COLOR_TEXT,
             activebackground=self.COLOR_BORDER,
@@ -599,7 +735,7 @@ class BananaUIApp:
         preview_title = tk.Label(
             header_frame,
             text="Image Preview",
-            font=("Segoe UI", 14, "bold"),
+            font=(PLATFORM_FONT, 14, "bold"),
             fg=self.COLOR_TEXT,
             bg=self.COLOR_PANEL
         )
@@ -608,7 +744,7 @@ class BananaUIApp:
         self.preview_badge = tk.Label(
             header_frame,
             text="Logo Preview",
-            font=("Segoe UI", 9),
+            font=(PLATFORM_FONT, 9),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_CARD,
             padx=8,
@@ -640,7 +776,7 @@ class BananaUIApp:
         self.filename_label = tk.Label(
             self.footer_frame,
             text="No image generated yet. Showing NanoBanana logo.",
-            font=("Segoe UI", 11),
+            font=(PLATFORM_FONT, 11),
             fg=self.COLOR_TEXT_MUTED,
             bg=self.COLOR_PANEL,
             anchor="w"
@@ -650,7 +786,7 @@ class BananaUIApp:
         self.open_image_btn = tk.Button(
             self.footer_frame,
             text="🔍 View Full Size",
-            font=("Segoe UI", 9),
+            font=(PLATFORM_FONT, 9),
             bg=self.COLOR_CARD,
             fg=self.COLOR_TEXT,
             activebackground=self.COLOR_INPUT_BG,
@@ -667,7 +803,7 @@ class BananaUIApp:
         self.open_folder_btn = tk.Button(
             self.footer_frame,
             text="📂 Open Output Folder",
-            font=("Segoe UI", 9),
+            font=(PLATFORM_FONT, 9),
             bg=self.COLOR_CARD,
             fg=self.COLOR_TEXT,
             activebackground=self.COLOR_INPUT_BG,
