@@ -20,10 +20,10 @@ try {
 
 # Project's root directory
 $PROJECT_ROOT = Join-Path -Path $PSScriptRoot -ChildPath ".."
+# Utilities folder
+$UTILS = Join-Path -Path $PROJECT_ROOT -ChildPath "utils"
 # Binaries folder
 $PROJECT_BIN = Join-Path -Path $PROJECT_ROOT -ChildPath "bin"
-# PyPy folder
-$PROJECT_PYPY = Join-Path -Path $PROJECT_BIN -ChildPath "pypy"
 # App's source code
 $SRC_APP = Join-Path -Path $PROJECT_ROOT -ChildPath "app"
 # App's assets
@@ -35,13 +35,6 @@ $APP_ICO = Join-Path -Path $PSScriptRoot -ChildPath "app_icon.ico"
 # App's PowerShell script launcher
 $APP_PS1 = Join-Path -Path $PSScriptRoot -ChildPath "BananaUI.ps1"
 
-# Erase PyPy current installation
-if (Test-Path $PROJECT_PYPY) {
-	Write-Host "Deleting current installation of PyPy..."
-	Remove-Item -path $PROJECT_PYPY -recurse
-	Write-Host "PyPy deleted!"
-}
-
 # Erase last build of the app
 if (Test-Path $APP_BIN) {
 	Write-Host "Deleting last build of BananaUI..."
@@ -49,21 +42,29 @@ if (Test-Path $APP_BIN) {
 	Write-Host "BananaUI deleted!"
 }
 
-# Perform clean installation of PyPy
-Write-Host "Executing clean installation of PyPy..."
-Write-Host "---------------------------------------"
-$SetupBat = Join-Path -Path $PROJECT_ROOT -ChildPath "SETUP_PROJECT_WINDOWS.bat"
-cmd /c $SetupBat --skip-last-pause
-Write-Host "---------------------------------------"
-
 # Creating output folder
 Write-Host "Creating folders for exported application..."
 $AppContentFolder = Join-Path -Path $APP_BIN -ChildPath "app"
-$PyPyRuntimeFolder = Join-Path -Path $APP_BIN -ChildPath "bin"
+$RuntimeFolder = Join-Path -Path $APP_BIN -ChildPath "runtime"
+$RuntimePyPy = Join-Path -Path $RuntimeFolder -ChildPath "pypy.exe"
+$RuntimePip = Join-Path -Path $RuntimeFolder -ChildPath "Scripts"
 
 New-Item $APP_BIN -Type Directory
 New-Item $AppContentFolder -Type Directory
-New-Item $PyPyRuntimeFolder -Type Directory
+Write-Host "---------------------------------------"
+
+# Perform clean installation of PyPy
+Write-Host "Executing clean installation of PyPy..."
+
+$SevenZ = Join-Path -Path $UTILS -ChildPath "7zr.exe"
+$PyPy_7z = Join-Path -Path $UTILS -ChildPath "pypy-3.11.7z"
+$Pillow_whl = Join-Path -Path $UTILS -ChildPath "pillow-12.3.0-pp311-pypy311_pp80-win_amd64.whl"
+
+& $SevenZ x -aoa -y -o"$RuntimeFolder" $PyPy_7z
+Write-Host "---------------------------------------"
+$env:PATH = "$RuntimeFolder;$RuntimePip;$env:PATH"
+& $RuntimePyPy -m pip install --force-reinstall --only-binary=pillow "$Pillow_whl" --no-cache-dir
+
 Write-Host "---------------------------------------"
 
 # Copying assets
@@ -75,10 +76,6 @@ Write-Host "Copying code..."
 Write-Host "---------------------------------------"
 robocopy $SRC_APP $AppContentFolder *.py /s
 Write-Host "---------------------------------------"
-
-# Copying runtime
-Write-Host "Copying PyPy's runtime..."
-Copy-Item -Path $PROJECT_PYPY -Destination $PyPyRuntimeFolder -Recurse
 
 # Generating executable
 Write-Host "Generating app executable file..."
