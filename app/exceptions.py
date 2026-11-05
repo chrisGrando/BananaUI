@@ -1,7 +1,6 @@
 """Custom exceptions for BananaUI / NanoBanana."""
-import os
 import traceback
-from inspect import getsourcefile
+from pathlib import Path
 
 
 class NanoBananaAPIError(Exception):
@@ -9,13 +8,12 @@ class NanoBananaAPIError(Exception):
     def __init__(self, message):
         # Save exception report to log file
         self.message = message
-        appRunningDir = (os.path.dirname(getsourcefile(lambda: 0))).replace("\\", "/")
-        errorFileName = appRunningDir + "/error.log"
-        with open(errorFileName, "a") as error_file:
+        error_file = Path(__file__).resolve().parent / "error.log"
+        with open(error_file, "a") as f:
             txt = self.message + "\n" + "----------------------------------------------------------------------------------" + "\n"
             print(txt)
-            error_file.write(txt)
-            error_file.write(str(traceback.format_exc()) + "\n" + "----------------------------------------------------------------------------------" + "\n")
+            f.write(txt)
+            f.write(str(traceback.format_exc()) + "\n" + "----------------------------------------------------------------------------------" + "\n")
 
         # Call the base class constructor with the parameters it needs
         super(Exception, self).__init__(message)

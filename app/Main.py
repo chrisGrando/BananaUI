@@ -1,7 +1,6 @@
 """Main entry point for the NanoBanana Gemini Image Generator application."""
-from inspect import getsourcefile
-import os
 import sys
+from pathlib import Path
 import tkinter as tk
 from ui import BananaUIApp, ensure_interactive_desktop
 
@@ -11,10 +10,9 @@ def main():
     ensure_interactive_desktop()
 
     # Delete error log file if exists
-    appRunningDir = (os.path.dirname(getsourcefile(lambda:0))).replace("\\", "/")
-    errorFile = appRunningDir + "/error.log"
-    if os.path.exists(errorFile):
-        os.remove(errorFile)
+    error_file = Path(__file__).resolve().parent / "error.log"
+    if error_file.exists():
+        error_file.unlink()
     
     # Run app
     root = tk.Tk()
