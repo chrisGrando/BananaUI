@@ -242,6 +242,31 @@ class BananaUIApp:
         self.style = ttk.Style()
         self.style.theme_use("clam")
 
+        # Ensure dropdown popdown Listbox default cursor is hand2 (clickable style)
+        self.root.option_add("*Toplevel*Listbox.cursor", "hand2")
+        self.root.option_add("*Listbox.cursor", "hand2")
+        self.root.option_add("*ComboboxListbox*cursor", "hand2")
+
+        # Prevent ttk::combobox::Motion from wiping custom cursor on readonly comboboxes
+        try:
+            self.root.tk.eval('''
+                proc ttk::combobox::Motion {w x y} {
+                    if {[$w instate {!readonly !disabled}]} {
+                        if {[$w identify $x $y] eq "textarea"} {
+                            ttk::setCursor $w text
+                        } else {
+                            ttk::setCursor $w ""
+                        }
+                    } else {
+                        if {[$w cget -cursor] eq ""} {
+                            ttk::setCursor $w ""
+                        }
+                    }
+                }
+            ''')
+        except Exception:
+            pass
+
         # Combobox styling
         self.style.configure(
             "TCombobox",
@@ -252,12 +277,14 @@ class BananaUIApp:
             bordercolor=self.COLOR_BORDER,
             darkcolor=self.COLOR_BORDER,
             lightcolor=self.COLOR_BORDER,
+            cursor="hand2",
             padding=6
         )
         self.style.map(
             "TCombobox",
             fieldbackground=[("readonly", self.COLOR_INPUT_BG), ("focus", self.COLOR_INPUT_BG)],
-            foreground=[("readonly", self.COLOR_TEXT), ("focus", self.COLOR_TEXT)]
+            foreground=[("readonly", self.COLOR_TEXT), ("focus", self.COLOR_TEXT)],
+            cursor=[("readonly", "hand2")]
         )
 
         # Progressbar styling
@@ -525,11 +552,16 @@ class BananaUIApp:
             values=model_names,
             state="readonly",
             style="TCombobox",
+            cursor="hand2",
+            postcommand=self._on_model_combobox_post,
             font=(PLATFORM_FONT, 9)
         )
         self.model_combobox.pack(fill=tk.X, pady=(0, 12))
-        self.model_combobox.bind("<<ComboboxSelected>>", lambda e: self.update_generate_button_state())
+        self.model_combobox.bind("<Enter>", lambda e: self.model_combobox.configure(cursor="hand2"))
+        self.model_combobox.bind("<Motion>", lambda e: "break")
+        self.model_combobox.bind("<<ComboboxSelected>>", self._on_model_selected)
         self.model_var.trace_add("write", lambda *args: self.update_generate_button_state())
+        self._on_model_combobox_post()
 
         # -------------------------------------------------------------
         # 3. PROMPT TEXT BLOCK (Required)
@@ -872,6 +904,26 @@ class BananaUIApp:
     # -----------------------------------------------------------------
     # Validation & GENERATE Button State
     # -----------------------------------------------------------------
+    def _on_model_combobox_post(self):
+        """Ensures the popdown options listbox and scrollbar use clickable hand2 cursor."""
+        try:
+            pop = self.root.tk.eval(f"ttk::combobox::PopdownWindow {self.model_combobox._w}")
+            self.root.tk.eval(f"{pop} configure -cursor hand2")
+            self.root.tk.eval(f"{pop}.f configure -cursor hand2")
+            self.root.tk.eval(f"{pop}.f.l configure -cursor hand2")
+            self.root.tk.eval(f"{pop}.f.sb configure -cursor hand2")
+        except Exception:
+            pass
+
+    def _on_model_selected(self, event=None):
+        """Removes the highlight from the combobox text after an option is chosen and updates state."""
+        self.model_combobox.selection_clear()
+        try:
+            self.model_combobox.after_idle(self.model_combobox.selection_clear)
+        except Exception:
+            pass
+        self.update_generate_button_state()
+
     def _on_prompt_modified(self, event=None):
         """Called when prompt text is modified."""
         flag = self.prompt_text.edit_modified()
