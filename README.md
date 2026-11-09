@@ -87,7 +87,7 @@ BananaUI includes built-in configurations for Google's NanoBanana image generati
 | **Nano Banana** | `gemini-2.5-flash-image` | *Legacy (Deprecated)* | Original preview model (retained for backward compatibility). |
 
 > [!TIP]
-> The model selector starts on `[SELECT A MODEL HERE]` to ensure an explicit model choice before triggering generation. You can also input or pass custom model identifiers supported by the Gemini API endpoint.
+> The model selector starts on `[SELECT A MODEL HERE]` to ensure an explicit model choice before triggering generation.
 
 ---
 
