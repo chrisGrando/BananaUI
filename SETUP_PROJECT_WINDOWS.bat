@@ -31,7 +31,7 @@ if not exist "%SevenZ%" (
 	exit /b 1
 )
 
-if not exist "%MY_SCRIPT_DIR%utils\pypy-3.11.7z" (
+if not exist "%MY_SCRIPT_DIR%utils\pypy-3.11-windows.7z" (
 	echo ERROR: PyPy package not found!
 	echo Aborting...
 	pause
@@ -42,7 +42,7 @@ cd "%MY_PYPY_DIR%"
 echo Extracting PyPy...
 echo -----------------------------------------------------
 
-"%SevenZ%" x -aoa -y "%MY_SCRIPT_DIR%utils\pypy-3.11.7z"
+"%SevenZ%" x -aoa -y "%MY_SCRIPT_DIR%utils\pypy-3.11-windows.7z"
 
 echo.
 echo -----------------------------------------------------

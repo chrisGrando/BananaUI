@@ -57,7 +57,7 @@ Write-Host "---------------------------------------"
 Write-Host "Executing clean installation of PyPy..."
 
 $SevenZ = Join-Path -Path $UTILS -ChildPath "7zr.exe"
-$PyPy_7z = Join-Path -Path $UTILS -ChildPath "pypy-3.11.7z"
+$PyPy_7z = Join-Path -Path $UTILS -ChildPath "pypy-3.11-windows.7z"
 $Pillow_whl = Join-Path -Path $UTILS -ChildPath "pillow-12.3.0-pp311-pypy311_pp80-win_amd64.whl"
 
 & $SevenZ x -aoa -y -o"$RuntimeFolder" $PyPy_7z

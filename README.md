@@ -99,11 +99,14 @@ BananaUI/
 │   ├── logo.py                 # Procedural vector logo generator and Pillow graphics
 │   ├── Main.py                 # Application entry point and interactive desktop setup
 │   └── ui.py                   # Tkinter GUI, background threads, layout, and event handlers
-├── bin/                        # Local runtime binaries (PyPy portable installation)
+├── bin/                        # Local binaries goes here
 ├── powershell/                 # Windows packaging and launcher scripts
 ├── utils/                      # Bundled offline archives (7zr, PyPy 3.11, Pillow wheel)
-├── BUILD_PROJECT_WINDOWS.bat   # Windows build and executable packaging script
+├── EXPORT_PROJECT_LINUX.sh     # Linux portable build packaging script
+├── EXPORT_PROJECT_WINDOWS.bat  # Windows build and executable packaging script
+├── RUN_PROJECT_LINUX.sh        # Linux launch script using local environment
 ├── RUN_PROJECT_WINDOWS.bat     # Launch script using local PyPy runtime
+├── SETUP_PROJECT_LINUX.sh      # Linux initial environment setup script
 ├── SETUP_PROJECT_WINDOWS.bat   # Initial environment extraction and setup script
 └── README.md                   # Project documentation
 ```
@@ -152,6 +155,8 @@ BananaUI/
 ### Prerequisites
 
 - **Windows, MacOSX, or Linux**.
+- **x86_64 CPU** (other types of CPUs are **not** supported)
+- **PowerShell 5.1** (for Windows OS only)
 - **PyPy 3.11** (already *included* for **windows**) or standard **Python 3.10+**.
 - **Pillow** (`PIL`) image processing library (already *included* for **windows**).
 
@@ -170,6 +175,25 @@ The repository comes with a portable PyPy runtime and pre-compiled Pillow wheel 
    ```cmd
    RUN_PROJECT_WINDOWS.bat
    ```
+
+### Setup on Linux
+
+1. **Configure the environment**:
+   ```bash
+   ./SETUP_PROJECT_LINUX.sh
+   ```
+   *This automatically detects PyPy or Python 3, sets up a virtual environment in `bin/PY_BIN/`, and installs Pillow.*
+
+2. **Launch the application**:
+   ```bash
+   ./RUN_PROJECT_LINUX.sh
+   ```
+
+3. **Export portable Linux build**:
+   ```bash
+   ./EXPORT_PROJECT_LINUX.sh
+   ```
+   *This packages a standalone portable distribution into `bin/BananaUI_Linux_x64/` with its own isolated runtime and launcher script (`BananaUI`).*
 
 ### Manual / Cross-Platform Setup
 
