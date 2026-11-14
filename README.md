@@ -129,6 +129,7 @@ BananaUI/
 ├── SETUP_PROJECT_LINUX.sh      # Linux initial environment setup script
 ├── SETUP_PROJECT_WINDOWS.bat   # Windows initial environment extraction and setup script
 ├── AGENTS.md                   # Agentic guidelines and repository rules
+├── splash.png                  # App screenshot
 ├── LICENSE                     # Software license
 └── README.md                   # Project documentation
 ```
