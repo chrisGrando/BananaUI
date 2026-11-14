@@ -1,5 +1,7 @@
 # BananaUI 🍌
 
+![Screenshot](https://github.com/chrisGrando/BananaUI/blob/main/splash.png?raw=true)
+
 **BananaUI** is a modern, high-performance desktop application built in Python for generating and editing images with Google's **NanoBanana** models powered by the **Gemini API**. It features an elegant dark-themed graphical interface, non-blocking asynchronous generation, support for up to eight multimodal image reference attachments, dynamic form validation, and integrated output preview management.
 
 BananaUI runs seamlessly on **Windows** and **Linux** (x86_64), offering automated offline setup routines and standalone packaging scripts powered by **PyPy 3.11** for lightning-fast execution.
